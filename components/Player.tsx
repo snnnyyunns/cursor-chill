@@ -53,16 +53,19 @@ export function Player({ letter }: { letter: Letter }) {
     }
 
     const chars = [...beat.text];
-    const typeMs = beat.effect === "typewriter" ? Math.min(2200, beat.durationMs * 0.55) : 0;
-    const step = chars.length ? typeMs / chars.length : 0;
-    let i = 0;
-    let typeTimer: number | undefined;
+    const typeMs =
+      beat.effect === "typewriter" ? Math.min(2800, Math.max(900, beat.durationMs * 0.62)) : beat.effect === "instant" ? 0 : 420;
+    let frame = 0;
     if (beat.effect === "typewriter") {
-      typeTimer = window.setInterval(() => {
-        i += 1;
-        if (!cancelled) setTyped(chars.slice(0, i).join(""));
-        if (i >= chars.length && typeTimer) window.clearInterval(typeTimer);
-      }, Math.max(18, step));
+      const started = performance.now();
+      const tick = (now: number) => {
+        if (cancelled) return;
+        const t = Math.min(1, (now - started) / Math.max(1, typeMs));
+        const n = Math.round(t * chars.length);
+        setTyped(chars.slice(0, n).join(""));
+        if (t < 1) frame = requestAnimationFrame(tick);
+      };
+      frame = requestAnimationFrame(tick);
     }
 
     const advance = () => {
@@ -81,7 +84,7 @@ export function Player({ letter }: { letter: Letter }) {
 
     return () => {
       cancelled = true;
-      if (typeTimer) window.clearInterval(typeTimer);
+      cancelAnimationFrame(frame);
       window.clearTimeout(ready);
       if (hold) window.clearTimeout(hold);
     };
@@ -121,7 +124,7 @@ export function Player({ letter }: { letter: Letter }) {
 
   return (
     <div className="stage reading">
-      <div className="scene">
+      <div className="scene scene-enter">
         <aside className="rail">
           {extras
             .filter((x) => x.side === "left")
@@ -134,9 +137,15 @@ export function Player({ letter }: { letter: Letter }) {
           {groups.map((group, gi) => (
             <p key={gi} className="letter-p">
               {group.map((item, i) => (
-                <span key={item.beat.id}>
+                <span
+                  key={item.beat.id}
+                  className={!done && item.beat.id === beat?.id && item.beat.effect !== "typewriter" ? "ink-in" : ""}
+                >
                   {i > 0 ? " " : null}
                   {item.text}
+                  {!done && item.beat.id === beat?.id && item.beat.effect === "typewriter" && item.text !== item.beat.text ? (
+                    <i className="caret" />
+                  ) : null}
                 </span>
               ))}
             </p>

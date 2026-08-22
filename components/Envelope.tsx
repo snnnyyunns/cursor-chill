@@ -21,7 +21,7 @@ export function Envelope({ onOpen }: { onOpen: () => void }) {
     opened.current = true;
     const el = document.getElementById("envelope");
     el?.classList.add("open");
-    window.setTimeout(onOpen, 1100);
+    window.setTimeout(onOpen, 1500);
   }
 
   return (

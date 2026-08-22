@@ -12,7 +12,7 @@ Interactive love letter for Cursor Build Salaya: write sentences on a timeline, 
 | Write a letter | https://cursor-chill.vercel.app/create |
 | Demo as a viewer | https://cursor-chill.vercel.app/v/demo |
 
-After you write, click **Copy share link** and send that URL. The letter is stored in the link (hash), so a teammate or the person you wrote it for can open it in any browser — they do not need GitHub, Cursor, or `npm`.
+After you write, click **Copy share link** and send that short URL (`/v/…`). Recipients open it in any browser — they do not need GitHub, Cursor, or `npm`.
 
 Vercel Deployment Protection (SSO) is **off** on this project, so those URLs are public. If a login wall comes back, disable it in Vercel: **Settings → Deployment Protection**.
 

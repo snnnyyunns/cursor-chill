@@ -23,17 +23,16 @@ export default function ViewPage() {
       setLetter(SAMPLE_LETTER);
       return;
     }
-    const local = loadLocal(id);
-    if (local) {
-      setLetter(local);
-      return;
-    }
     fetch(`/api/letters/${id}`)
       .then(async (res) => {
         if (!res.ok) throw new Error("missing");
         setLetter(await res.json());
       })
-      .catch(() => setError("This letter is not here. Ask the creator for their share link."));
+      .catch(() => {
+        const local = loadLocal(id);
+        if (local) setLetter(local);
+        else setError("This letter is not here. Ask the creator for their share link.");
+      });
   }, [id]);
 
   if (error) {

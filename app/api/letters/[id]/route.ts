@@ -1,10 +1,15 @@
-import type { Letter } from "@/lib/types";
+import { fetchRemote, getLetter, putLetter } from "@/lib/store";
 
-const g = globalThis as typeof globalThis & { __letters?: Map<string, Letter> };
+export const dynamic = "force-dynamic";
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const letter = g.__letters?.get(id);
-  if (!letter) return Response.json({ error: "Not found" }, { status: 404 });
-  return Response.json(letter);
+  const local = await getLetter(id);
+  if (local) return Response.json(local);
+  const remote = await fetchRemote(id);
+  if (remote) {
+    await putLetter(remote);
+    return Response.json(remote);
+  }
+  return Response.json({ error: "Not found" }, { status: 404 });
 }

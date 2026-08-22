@@ -3,7 +3,7 @@
 import { compressImage, readFileAsDataUrl } from "@/lib/image";
 import { emptyBeat, saveLocal, shareUrl } from "@/lib/letter";
 import { Beat, DEFAULT_DURATION_MS, EFFECTS, Letter } from "@/lib/types";
-import { useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 type Menu = { x: number; y: number; beatId: string } | null;
 
@@ -16,6 +16,7 @@ export function Editor({ initial }: { initial: Letter }) {
   const imageInput = useRef<HTMLInputElement>(null);
   const audioInput = useRef<HTMLInputElement>(null);
   const pendingBeat = useRef<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   function updateBeat(id: string, patch: Partial<Beat>) {
     setLetter((cur) => ({
@@ -24,8 +25,9 @@ export function Editor({ initial }: { initial: Letter }) {
     }));
   }
 
-  function addBeat(afterId?: string) {
+  function addBeat(afterId?: string, asParagraph = false) {
     const beat = emptyBeat("");
+    if (asParagraph) beat.newParagraph = true;
     setLetter((cur) => {
       const next = [...cur.beats];
       const i = afterId ? next.findIndex((b) => b.id === afterId) : next.length - 1;
@@ -38,7 +40,9 @@ export function Editor({ initial }: { initial: Letter }) {
   function removeBeat(id: string) {
     setLetter((cur) => {
       const beats = cur.beats.filter((b) => b.id !== id);
-      return { ...cur, beats: beats.length ? beats : [emptyBeat("")] };
+      const next = beats.length ? beats : [emptyBeat("")];
+      if (active === id) setActive(next[0].id);
+      return { ...cur, beats: next };
     });
   }
 
@@ -64,19 +68,51 @@ export function Editor({ initial }: { initial: Letter }) {
     setStatus("Saving…");
     saveLocal(letter);
     try {
-      await fetch("/api/letters", {
+      const res = await fetch("/api/letters", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(letter),
       });
+      if (!res.ok) throw new Error("save failed");
+      const data = (await res.json()) as { id: string };
+      const saved = { ...letter, id: data.id };
+      setLetter(saved);
+      saveLocal(saved);
+      const url = shareUrl(saved);
+      setLink(url);
+      await navigator.clipboard.writeText(url).catch(() => {});
+      setStatus("Short link copied.");
     } catch {
-      /* hash in the URL is the real share payload */
+      const url = shareUrl(letter);
+      setLink(url);
+      await navigator.clipboard.writeText(url).catch(() => {});
+      setStatus("Saved on this browser. Share may not work on another phone until save succeeds.");
     }
-    const url = shareUrl(letter);
-    setLink(url);
-    await navigator.clipboard.writeText(url).catch(() => {});
-    setStatus("Link copied. Send it to the viewer.");
   }
+
+  useLayoutEffect(() => {
+    if (!menu || !menuRef.current) return;
+    const el = menuRef.current;
+    const rect = el.getBoundingClientRect();
+    let left = menu.x;
+    let top = menu.y;
+    const pad = 8;
+    if (left + rect.width > window.innerWidth - pad) left = window.innerWidth - rect.width - pad;
+    if (top + rect.height > window.innerHeight - pad) top = window.innerHeight - rect.height - pad;
+    if (left < pad) left = pad;
+    if (top < pad) top = pad;
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+  }, [menu]);
+
+  useEffect(() => {
+    if (!menu) return;
+    const close = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenu(null);
+    };
+    window.addEventListener("mousedown", close);
+    return () => window.removeEventListener("mousedown", close);
+  }, [menu]);
 
   return (
     <div className="wrap">
@@ -119,7 +155,7 @@ export function Editor({ initial }: { initial: Letter }) {
           {letter.beats.map((beat, i) => (
             <div
               key={beat.id}
-              className={`beat-row ${active === beat.id ? "active" : ""}`}
+              className={`beat-row ${active === beat.id ? "active" : ""} ${beat.newParagraph ? "para" : ""}`}
               onClick={() => setActive(beat.id)}
               onContextMenu={(e) => {
                 e.preventDefault();
@@ -127,6 +163,7 @@ export function Editor({ initial }: { initial: Letter }) {
                 setMenu({ x: e.clientX, y: e.clientY, beatId: beat.id });
               }}
             >
+              {beat.newParagraph ? <div className="para-tag">New paragraph</div> : null}
               <textarea
                 rows={2}
                 placeholder={`Sentence ${i + 1}`}
@@ -153,19 +190,34 @@ export function Editor({ initial }: { initial: Letter }) {
                   />
                   s
                 </span>
-                <span>Right-click for effect / image / sound</span>
+                <button
+                  type="button"
+                  className="linkish"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeBeat(beat.id);
+                    setMenu(null);
+                  }}
+                >
+                  Delete
+                </button>
               </div>
             </div>
           ))}
-          <button className="btn ghost" onClick={() => addBeat(letter.beats.at(-1)?.id)}>
-            Add sentence
-          </button>
+          <div className="row" style={{ justifyContent: "flex-start" }}>
+            <button className="btn ghost" onClick={() => addBeat(letter.beats.at(-1)?.id)}>
+              Add sentence
+            </button>
+            <button className="btn ghost" onClick={() => addBeat(letter.beats.at(-1)?.id, true)}>
+              New paragraph
+            </button>
+          </div>
         </div>
 
         <div className="card">
           <p style={{ marginTop: 0, color: "var(--ink-soft)" }}>
-            Timeline: each sentence is a beat. Default runtime is {DEFAULT_DURATION_MS / 1000}s. Viewers can switch
-            auto (cutscene) or manual (visual novel). Recap shows text and pictures, never sound.
+            Sentences stay on one page and stack downward. Use <b>New paragraph</b> for a break. Right-click for
+            effect, image, or sound. Delete is on each row.
           </p>
           {status ? <p>{status}</p> : null}
           {link ? <div className="share-box">{link}</div> : null}
@@ -196,7 +248,7 @@ export function Editor({ initial }: { initial: Letter }) {
       />
 
       {menu ? (
-        <div className="menu" style={{ left: menu.x, top: menu.y }} onMouseLeave={() => setMenu(null)}>
+        <div ref={menuRef} className="menu" style={{ left: menu.x, top: menu.y }}>
           {EFFECTS.map((fx) => (
             <button
               key={fx.id}
@@ -232,7 +284,7 @@ export function Editor({ initial }: { initial: Letter }) {
           >
             Runtime 7s
           </button>
-          <label
+          <button
             onClick={() => {
               pendingBeat.current = menu.beatId;
               imageInput.current?.click();
@@ -240,8 +292,8 @@ export function Editor({ initial }: { initial: Letter }) {
             }}
           >
             Add image
-          </label>
-          <label
+          </button>
+          <button
             onClick={() => {
               pendingBeat.current = menu.beatId;
               audioInput.current?.click();
@@ -249,7 +301,16 @@ export function Editor({ initial }: { initial: Letter }) {
             }}
           >
             Add sound (once)
-          </label>
+          </button>
+          <button
+            onClick={() => {
+              const beat = letter.beats.find((b) => b.id === menu.beatId);
+              updateBeat(menu.beatId, { newParagraph: !beat?.newParagraph });
+              setMenu(null);
+            }}
+          >
+            Toggle new paragraph
+          </button>
           <button
             onClick={() => {
               addBeat(menu.beatId);

@@ -64,5 +64,5 @@ export function decodeLetter(payload: string): Letter | null {
 
 export function shareUrl(letter: Letter) {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  return `${origin}/v/${letter.id}#${encodeLetter(letter)}`;
+  return `${origin}/v/${letter.id}`;
 }

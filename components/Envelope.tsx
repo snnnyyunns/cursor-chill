@@ -28,8 +28,9 @@ export function Envelope({ onOpen }: { onOpen: () => void }) {
     <div className="stage">
       <div>
         <div id="envelope" className="envelope" onClick={open} role="button" tabIndex={0}>
-          <div className="flap" />
-          <div className="pocket" />
+          <div className="env-back" />
+          <div className="env-flap" />
+          <div className="env-front" />
           <div className="heart">
             <div className="heart-shape" />
           </div>

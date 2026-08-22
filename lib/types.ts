@@ -5,6 +5,7 @@ export type Beat = {
   text: string;
   durationMs: number;
   effect: Effect;
+  newParagraph?: boolean;
   imageDataUrl?: string;
   audioDataUrl?: string;
 };

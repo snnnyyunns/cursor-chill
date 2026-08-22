@@ -24,6 +24,7 @@ export const SAMPLE_LETTER: Letter = {
       text: "This is not a grand speech. It is a letter I can finally hand you.",
       durationMs: 5000,
       effect: "slide",
+      newParagraph: true,
     },
   ],
 };

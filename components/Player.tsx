@@ -93,7 +93,7 @@ export function Player({ letter }: { letter: Letter }) {
   if (!opened) return <Envelope onOpen={() => setOpened(true)} />;
   if (!beat && !done) return null;
 
-  const groups = groupsOf(visible);
+  const groups = groupsOf(visible.filter((v) => v.beat.text.trim()));
   const extras = visible.flatMap((item) => {
     if (!item.revealed) return [];
     const bits: { id: string; src: string; side: "left" | "right"; kind: string }[] = [];
@@ -104,6 +104,16 @@ export function Player({ letter }: { letter: Letter }) {
         src,
         side: sideOf("image", item.beat),
         kind: "photo",
+      });
+    }
+    if (item.beat.sideGifs) {
+      item.beat.sideGifs.forEach((g, n) => {
+        bits.push({
+          id: `${item.beat.id}-gif-${n}`,
+          src: g.url,
+          side: g.side,
+          kind: "photo",
+        });
       });
     }
     if (item.beat.handwritingDataUrl) {

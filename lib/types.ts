@@ -7,6 +7,9 @@ export type Beat = {
   effect: Effect;
   newParagraph?: boolean;
   imageDataUrl?: string;
+  imageSide?: "left" | "right";
+  handwritingDataUrl?: string;
+  handwritingSide?: "left" | "right";
   audioDataUrl?: string;
 };
 

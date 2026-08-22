@@ -2,6 +2,7 @@
 
 import { Player } from "@/components/Player";
 import { decodeLetter, loadLocal } from "@/lib/letter";
+import { RICK_LETTER } from "@/lib/rick";
 import { SAMPLE_LETTER } from "@/lib/sample";
 import { Letter } from "@/lib/types";
 import { useParams } from "next/navigation";
@@ -21,6 +22,10 @@ export default function ViewPage() {
     }
     if (id === "demo") {
       setLetter(SAMPLE_LETTER);
+      return;
+    }
+    if (id === "rick") {
+      setLetter(RICK_LETTER);
       return;
     }
     fetch(`/api/letters/${id}`)

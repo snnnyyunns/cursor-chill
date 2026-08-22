@@ -97,10 +97,11 @@ export function Player({ letter }: { letter: Letter }) {
   const extras = visible.flatMap((item) => {
     if (!item.revealed) return [];
     const bits: { id: string; src: string; side: "left" | "right"; kind: string }[] = [];
-    if (item.beat.imageDataUrl) {
+    const src = item.beat.imageDataUrl || item.beat.imageUrl;
+    if (src) {
       bits.push({
         id: `${item.beat.id}-img`,
-        src: item.beat.imageDataUrl,
+        src,
         side: sideOf("image", item.beat),
         kind: "photo",
       });
@@ -150,6 +151,16 @@ export function Player({ letter }: { letter: Letter }) {
               ))}
             </p>
           ))}
+          {visible.some((v) => v.revealed && v.beat.videoUrl) ? (
+            <div className="letter-video">
+              <iframe
+                title="Rickroll"
+                src={visible.find((v) => v.revealed && v.beat.videoUrl)?.beat.videoUrl}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          ) : null}
           {done && letter.from ? <p className="signoff">— {letter.from}</p> : null}
         </div>
         <aside className="rail">

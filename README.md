@@ -1,0 +1,2 @@
+# cursor-chill
+cursor saturday

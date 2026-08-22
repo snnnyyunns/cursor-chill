@@ -46,8 +46,9 @@ export function Player({ letter }: { letter: Letter }) {
     setTyped(beat.effect === "typewriter" ? "" : beat.text);
     let cancelled = false;
     audioRef.current?.pause();
-    if (beat.audioDataUrl) {
-      const a = new Audio(beat.audioDataUrl);
+    const sound = beat.audioDataUrl || beat.audioUrl;
+    if (sound) {
+      const a = new Audio(sound);
       audioRef.current = a;
       a.play().catch(() => {});
     }

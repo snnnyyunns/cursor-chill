@@ -12,6 +12,7 @@ export type Beat = {
   handwritingDataUrl?: string;
   handwritingSide?: "left" | "right";
   audioDataUrl?: string;
+  audioUrl?: string;
   videoUrl?: string;
   sideGifs?: { url: string; side: "left" | "right" }[];
 };
